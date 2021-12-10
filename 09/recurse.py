@@ -1,8 +1,4 @@
-import functools
 import numpy as np
-from scipy.ndimage import label, generate_binary_structure
-from scipy.ndimage.filters import maximum_filter
-from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
 example_input = """2199943210
 3987894921
@@ -22,7 +18,6 @@ def safe_get(l, i, j):
 def is_local_minimum(i,j,input):
     val = input[i][j]
     neighbors = []
-    labeled_array, num_features = label(input)
 
     neighbors.append(safe_get(input, i-1, j))
     neighbors.append(safe_get(input, i+1, j))
@@ -40,20 +35,33 @@ def main():
     for i, row in enumerate(input):
         for j, col in enumerate(row):
             if is_local_minimum(i,j,input):
-                minima.append(input[i][j])
+                minima.append((i,j))
 
-    print(sum([x+1 for x in minima]))
-    input = DFS(4,4,input)
-    i = -1
+    collections = []
+    for (i,j) in minima:
+        collection = DFS(i, j, input, [(i,j)])
+        collections.append(len(collection))
+
+    print(np.product(list(reversed(np.sort(collections)))[0:3]))
 
 
-def DFS(x, y, input):
+
+def DFS(x, y, input, collection):
     input[x][y] = None
-    for dx in range(x-1, x):
-        for dy in range(y-1, y):
-            if safe_get(input, dx, dy) is not None:
-                return DFS(dx, dy, input)
-    return input
+
+    check = [
+        (x, y - 1),
+        (x, y + 1),
+        (x + 1, y),
+        (x - 1, y),
+    ]
+
+    for (dx, dy) in check:
+        val = safe_get(input, dx, dy)
+        if val is not None and val != 9:
+            collection.append((dx, dy))
+            collection = DFS(dx, dy, input, collection)
+    return collection
 
 
 
